@@ -96,7 +96,7 @@ def ensure_regions_seeded(db: Session) -> int:
     jemulpo = db.scalar(
         select(Region).where(Region.code == "2815000000", Region.is_active.is_(True))
     )
-    yeongjong_jungsan = db.get(Region, "2816014900")
+    yeongjong_jungsan = db.get(Region, "2816014500")
     if old_junggu is not None or jemulpo is None or yeongjong_jungsan is None:
         return seed_regions(db)
     return 0
