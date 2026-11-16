@@ -71,9 +71,20 @@ export async function fetchEmd(sigunguCd: string): Promise<RegionListResponse> {
   return requestJson<RegionListResponse>(`${API_BASE}/regions/emd?${qs.toString()}`)
 }
 
-export async function fetchDashboard(sigunguCd?: string): Promise<DashboardSummaryResponse> {
+export async function fetchDashboard(params?: {
+  sido_cd?: string
+  sigungu_cd?: string
+  bjdong_cd?: string
+}): Promise<DashboardSummaryResponse> {
   const qs = new URLSearchParams()
-  if (sigunguCd) qs.set('sigungu_cd', sigunguCd)
+  if (params?.sigungu_cd) {
+    qs.set('sigungu_cd', params.sigungu_cd)
+  } else if (params?.sido_cd) {
+    qs.set('sido_cd', params.sido_cd)
+  }
+  if (params?.bjdong_cd && params.bjdong_cd !== '00000') {
+    qs.set('bjdong_cd', params.bjdong_cd)
+  }
   const suffix = qs.toString() ? `?${qs.toString()}` : ''
   return requestJson<DashboardSummaryResponse>(`${API_BASE}/dashboard${suffix}`)
 }
@@ -82,7 +93,11 @@ export async function fetchMonthlyDashboard(
   params: MonthlyQueryParams = {},
 ): Promise<MonthlySummaryResponse> {
   const qs = new URLSearchParams()
-  if (params.sigungu_cd) qs.set('sigungu_cd', params.sigungu_cd)
+  if (params.sigungu_cd) {
+    qs.set('sigungu_cd', params.sigungu_cd)
+  } else if (params.sido_cd) {
+    qs.set('sido_cd', params.sido_cd)
+  }
   if (params.bjdong_cd && params.bjdong_cd !== '00000') qs.set('bjdong_cd', params.bjdong_cd)
   if (params.months !== undefined) qs.set('months', String(params.months))
   if (params.month) qs.set('month', params.month)
@@ -98,7 +113,11 @@ export async function fetchBuildings(
   params: BuildingSearchParams = {},
 ): Promise<PaginatedBuildingsResponse> {
   const qs = new URLSearchParams()
-  if (params.sigungu_cd) qs.set('sigungu_cd', params.sigungu_cd)
+  if (params.sigungu_cd) {
+    qs.set('sigungu_cd', params.sigungu_cd)
+  } else if (params.sido_cd) {
+    qs.set('sido_cd', params.sido_cd)
+  }
   if (params.bjdong_cd && params.bjdong_cd !== '00000') qs.set('bjdong_cd', params.bjdong_cd)
   if (params.stages && params.stages.length > 0) {
     for (const stage of params.stages) {

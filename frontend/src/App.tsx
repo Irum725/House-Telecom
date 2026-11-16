@@ -127,7 +127,11 @@ export function App() {
   const loadDashboard = useCallback(async () => {
     setDashboardLoading(true)
     try {
-      const data = await fetchDashboard(selectedSigungu || undefined)
+      const data = await fetchDashboard({
+        sido_cd: !selectedSigungu && selectedSido ? selectedSido : undefined,
+        sigungu_cd: selectedSigungu || undefined,
+        bjdong_cd: selectedEmd && selectedEmd !== '00000' ? selectedEmd : undefined,
+      })
       setDashboard(data)
     } catch (err) {
       setNotice({
@@ -137,13 +141,14 @@ export function App() {
     } finally {
       setDashboardLoading(false)
     }
-  }, [selectedSigungu])
+  }, [selectedSido, selectedSigungu, selectedEmd])
 
   const loadBuildings = useCallback(async () => {
     setBuildingsLoading(true)
     try {
       const minScoreNum = filters.minScore.trim() ? Number(filters.minScore) : undefined
       const data = await fetchBuildings({
+        sido_cd: !selectedSigungu && selectedSido ? selectedSido : undefined,
         sigungu_cd: selectedSigungu || undefined,
         bjdong_cd: selectedEmd && selectedEmd !== '00000' ? selectedEmd : undefined,
         stages: filters.stages.length > 0 ? filters.stages : undefined,
@@ -169,7 +174,7 @@ export function App() {
     } finally {
       setBuildingsLoading(false)
     }
-  }, [selectedSigungu, selectedEmd, filters, sortBy, sortOrder, page])
+  }, [selectedSido, selectedSigungu, selectedEmd, filters, sortBy, sortOrder, page])
 
   const loadExclusions = useCallback(async () => {
     setExclusionsLoading(true)

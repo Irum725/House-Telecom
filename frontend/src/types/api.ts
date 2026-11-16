@@ -118,6 +118,7 @@ export const BUILDING_SCALE_LABELS: Record<BuildingScale, string> = {
 }
 
 export interface BuildingSearchParams {
+  sido_cd?: string
   sigungu_cd?: string
   bjdong_cd?: string
   stages?: BuildingStage[]

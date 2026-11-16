@@ -79,6 +79,7 @@ def _to_building_summary(
 
 @router.get("", response_model=PaginatedBuildingsResponse)
 def list_buildings(
+    sido_cd: Optional[str] = Query(default=None, min_length=2, max_length=2),
     sigungu_cd: Optional[str] = Query(default=None, min_length=5, max_length=5),
     bjdong_cd: Optional[str] = Query(default=None, min_length=5, max_length=5),
     stages: Optional[list[BuildingStage]] = Query(default=None),
@@ -110,6 +111,8 @@ def list_buildings(
 
     if sigungu_cd:
         stmt = stmt.where(Building.sigungu_cd == sigungu_cd)
+    elif sido_cd:
+        stmt = stmt.where(Building.sigungu_cd.like(f"{sido_cd}%"))
     if bjdong_cd and bjdong_cd != "00000":
         stmt = stmt.where(Building.bjdong_cd == bjdong_cd)
     if stages:

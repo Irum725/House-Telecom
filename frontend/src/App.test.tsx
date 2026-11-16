@@ -405,4 +405,35 @@ describe('신축 통신공사 사전파악 리포트 시스템 UI', () => {
       ).toBe(true)
     })
   })
+
+  it('passes bjdong_cd to /api/dashboard when selecting an 읍/면/동', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const sidoSelect = await screen.findByLabelText('1. 시/도')
+    await waitFor(() => expect(within(sidoSelect).getByText('경기도')).toBeInTheDocument())
+    await user.selectOptions(sidoSelect, '41')
+
+    const sigunguSelect = screen.getByLabelText('2. 시/군/구')
+    await waitFor(() =>
+      expect(within(sigunguSelect).getByText('성남시 분당구')).toBeInTheDocument(),
+    )
+    await user.selectOptions(sigunguSelect, '41135')
+
+    const emdSelect = screen.getByLabelText('3. 읍/면/동 (선택)')
+    await waitFor(() => expect(within(emdSelect).getByText('정자동')).toBeInTheDocument())
+    await user.selectOptions(emdSelect, '10300')
+
+    await waitFor(() => {
+      const calls = fetchMock.mock.calls.map(([u]) => String(u))
+      expect(
+        calls.some(
+          (u) =>
+            u.includes('/api/dashboard') &&
+            u.includes('sigungu_cd=41135') &&
+            u.includes('bjdong_cd=10300'),
+        ),
+      ).toBe(true)
+    })
+  })
 })

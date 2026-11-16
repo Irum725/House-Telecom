@@ -210,6 +210,12 @@ def test_full_api_workflow(client: TestClient):
     assert dash["excluded_count"] == 2
     assert dash["active_targets"] == 10
 
+    dash_emd_res = client.get(
+        "/api/dashboard", params={"sigungu_cd": "41135", "bjdong_cd": "10300"}
+    )
+    assert dash_emd_res.status_code == 200
+    assert 1 <= dash_emd_res.json()["total_buildings"] < 12
+
     # 6b. Monthly new building tracking endpoint
     monthly_res = client.get(
         "/api/dashboard/monthly",

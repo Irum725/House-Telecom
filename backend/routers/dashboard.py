@@ -61,13 +61,19 @@ def _building_to_summary(
 
 @router.get("", response_model=DashboardSummaryResponse)
 def get_dashboard_summary(
+    sido_cd: Optional[str] = Query(default=None, min_length=2, max_length=2),
     sigungu_cd: Optional[str] = Query(default=None, min_length=5, max_length=5),
+    bjdong_cd: Optional[str] = Query(default=None, min_length=5, max_length=5),
     db: Session = Depends(get_db),
 ) -> DashboardSummaryResponse:
     """Return KPI counts, stage breakdown, exclusion breakdown, top buildings, and recent reports."""
     base_filter = []
     if sigungu_cd:
         base_filter.append(Building.sigungu_cd == sigungu_cd)
+    elif sido_cd:
+        base_filter.append(Building.sigungu_cd.like(f"{sido_cd}%"))
+    if bjdong_cd and bjdong_cd != "00000":
+        base_filter.append(Building.bjdong_cd == bjdong_cd)
 
     total_buildings = db.scalar(
         select(func.count(Building.mgm_pmsrgst_pk)).where(*base_filter)
