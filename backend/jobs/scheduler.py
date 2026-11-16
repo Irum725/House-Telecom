@@ -6,8 +6,12 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
+try:
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.triggers.cron import CronTrigger
+except ImportError:
+    BackgroundScheduler = None  # type: ignore[assignment]
+    CronTrigger = None  # type: ignore[assignment]
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -105,8 +109,12 @@ def create_scheduler(
     sync_from_db: bool = True,
     use_fixture: bool = False,
     output_dir: str | Path | None = None,
-) -> BackgroundScheduler:
+) -> BackgroundScheduler | None:
     """Create and optionally populate a BackgroundScheduler from active InterestRegions."""
+    if BackgroundScheduler is None:
+        logger.warning("apscheduler is not installed; background scheduler is disabled.")
+        return None
+
     scheduler = BackgroundScheduler(timezone=DEFAULT_TIMEZONE)
     if sync_from_db:
         db = session_factory()
@@ -136,6 +144,10 @@ def start_scheduler(
 ) -> BackgroundScheduler:
     """Start the singleton BackgroundScheduler (idempotent)."""
     global _scheduler
+    if BackgroundScheduler is None:
+        logger.warning("apscheduler is not installed; skipping start_scheduler.")
+        return None  # type: ignore[return-value]
+
     if _scheduler is not None and _scheduler.running:
         return _scheduler
     _scheduler = create_scheduler(

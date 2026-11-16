@@ -99,3 +99,13 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+# WSGI compatibility for PythonAnywhere
+try:
+    from a2wsgi import ASGIMiddleware
+
+    wsgi_app = ASGIMiddleware(app)
+    application = wsgi_app
+except ImportError:
+    wsgi_app = None
+    application = None
