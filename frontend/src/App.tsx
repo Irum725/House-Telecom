@@ -40,13 +40,23 @@ import type {
   SortOrder,
 } from './types/api'
 
+function getDefaultDateRange(): { dateFrom: string; dateTo: string } {
+  const year = new Date().getFullYear()
+  return {
+    dateFrom: `${year}-01-01`,
+    dateTo: `${year + 1}-12-31`,
+  }
+}
+
+const DEFAULT_DATES = getDefaultDateRange()
+
 const INITIAL_FILTERS: FilterState = {
   stages: [],
   scale: 'all',
   mainPurps: '',
   minScore: '',
-  dateFrom: '',
-  dateTo: '',
+  dateFrom: DEFAULT_DATES.dateFrom,
+  dateTo: DEFAULT_DATES.dateTo,
   q: '',
 }
 

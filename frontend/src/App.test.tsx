@@ -380,4 +380,29 @@ describe('신축 통신공사 사전파악 리포트 시스템 UI', () => {
       expect(calls.some((c) => c.url.includes('/api/buildings/reset') && c.method === 'DELETE')).toBe(true)
     })
   })
+
+  it('defaults dateFrom to Jan 1 of current year and dateTo to Dec 31 of next year', async () => {
+    render(<App />)
+    const year = new Date().getFullYear()
+    const expectedFrom = `${year}-01-01`
+    const expectedTo = `${year + 1}-12-31`
+
+    const fromInput = (await screen.findByLabelText('허가/착공 시작일')) as HTMLInputElement
+    const toInput = (await screen.findByLabelText('허가/착공 종료일')) as HTMLInputElement
+
+    expect(fromInput.value).toBe(expectedFrom)
+    expect(toInput.value).toBe(expectedTo)
+
+    await waitFor(() => {
+      const calls = fetchMock.mock.calls.map(([u]) => String(u))
+      expect(
+        calls.some(
+          (u) =>
+            u.includes('/api/buildings') &&
+            u.includes(`date_from=${year}0101`) &&
+            u.includes(`date_to=${year + 1}1231`),
+        ),
+      ).toBe(true)
+    })
+  })
 })
