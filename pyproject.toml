@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "house-telecom"
+version = "0.1.0"
+description = "신축·인허가 건축물 통신영업 타겟 발굴 및 공정 단계별 자동 리포팅 플랫폼"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "sqlalchemy>=2.0.35",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "httpx>=0.27.0",
+    "openpyxl>=3.1.5",
+    "weasyprint>=62.3",
+    "apscheduler>=3.10.4",
+    "python-multipart>=0.0.12",
+    "pyyaml>=6.0.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["shared*", "backend*"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend", "shared"]
+pythonpath = ["."]

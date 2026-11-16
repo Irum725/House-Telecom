@@ -1,0 +1,35 @@
+{
+  "response": {
+    "header": {
+      "resultCode": "00",
+      "resultMsg": "NORMAL SERVICE."
+    },
+    "body": {
+      "items": {
+        "item": {
+          "rnum": 1,
+          "mgmPmsrgstPk": "41135-100299999",
+          "sigunguCd": "41135",
+          "bjdongCd": "10300",
+          "platGbCd": "0",
+          "bun": "0010",
+          "ji": "0000",
+          "platPlc": "경기도 성남시 분당구 정자동 10번지",
+          "newPlatPlc": "경기도 성남시 분당구 정자로 10",
+          "bldNm": "정자 단독타운",
+          "mainPurpsCdNm": "단독주택",
+          "totArea": "320.5",
+          "hhldCnt": "1",
+          "dongCnt": "1",
+          "archPmsDay": "20261001",
+          "stcnsSchedDay": " ",
+          "realStcnsDay": null,
+          "useAprDay": ""
+        }
+      },
+      "numOfRows": 100,
+      "pageNo": 1,
+      "totalCount": 1
+    }
+  }
+}

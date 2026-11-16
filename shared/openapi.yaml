@@ -1,0 +1,367 @@
+openapi: 3.1.0
+info:
+  title: House-Telecom API
+  version: 0.1.0
+  description: 신축·인허가 건축물 통신영업 타겟 발굴 및 공정 단계별 자동 리포팅 플랫폼 REST API
+
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: Service healthy
+
+  /api/regions/sido:
+    get:
+      summary: 시/도 목록 조회
+      responses:
+        "200":
+          description: RegionListResponse
+
+  /api/regions/sigungu:
+    get:
+      summary: 시/군/구 목록 조회
+      parameters:
+        - name: sido_cd
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: RegionListResponse
+
+  /api/regions/emd:
+    get:
+      summary: 읍/면/동 목록 조회
+      parameters:
+        - name: sigungu_cd
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: RegionListResponse
+
+  /api/regions/api-params:
+    get:
+      summary: 법정동코드 -> 건축HUB API 파라미터 변환
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: RegionApiParams
+
+  /api/buildings:
+    get:
+      summary: 건축물 검색/필터/페이지네이션 조회
+      parameters:
+        - name: sigungu_cd
+          in: query
+          schema: { type: string }
+        - name: bjdong_cd
+          in: query
+          schema: { type: string }
+        - name: stages
+          in: query
+          schema:
+            type: array
+            items: { type: string }
+        - name: main_purps
+          in: query
+          schema: { type: string }
+        - name: scale
+          in: query
+          schema:
+            type: string
+            enum: [all, small, large]
+          description: "규모 필터 (small: 단독/다가구/다세대/연립/근린생활시설 또는 연면적 < 1,000㎡, large: 공동주택/아파트/업무시설/오피스텔 또는 연면적 >= 3,000㎡)"
+        - name: min_hhld_cnt
+          in: query
+          schema: { type: integer }
+        - name: min_tot_area
+          in: query
+          schema: { type: number }
+        - name: min_priority_score
+          in: query
+          schema: { type: number }
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: include_excluded
+          in: query
+          schema: { type: boolean, default: false }
+        - name: sort_by
+          in: query
+          schema: { type: string, default: priority_score }
+        - name: sort_order
+          in: query
+          schema: { type: string, enum: [asc, desc], default: desc }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: page_size
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: PaginatedBuildingsResponse
+
+  /api/buildings/sync:
+    post:
+      summary: 건축HUB 데이터 수집 및 단계/점수 재계산
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: BuildingSyncRequest
+      responses:
+        "200":
+          description: BuildingSyncResponse
+
+  /api/buildings/{mgm_pmsrgst_pk}:
+    get:
+      summary: 건축물 상세 및 제외 이력 조회
+      parameters:
+        - name: mgm_pmsrgst_pk
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: BuildingDetail
+        "404":
+          description: Building not found
+
+  /api/exclusions:
+    get:
+      summary: 현재 제외된 건축물 이력 목록 조회
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: active_only
+          in: query
+          schema: { type: boolean, default: true }
+      responses:
+        "200":
+          description: ExclusionListResponse
+    post:
+      summary: 건축물 제외 등록 (현장개통/자사시스템/비대상/보류)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: ExclusionCreateRequest
+      responses:
+        "201":
+          description: ExclusionHistoryItem
+
+  /api/exclusions/bulk-csv:
+    post:
+      summary: CSV 업로드를 통한 일괄 제외 처리
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                actor:
+                  type: string
+                status:
+                  type: string
+      responses:
+        "200":
+          description: ExclusionBulkResponse
+
+  /api/exclusions/{mgm_pmsrgst_pk}/restore:
+    post:
+      summary: 제외된 건축물 복원 (Undo)
+      parameters:
+        - name: mgm_pmsrgst_pk
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: ExclusionRestoreRequest
+      responses:
+        "200":
+          description: ExclusionHistoryItem
+
+  /api/exclusions/{mgm_pmsrgst_pk}/history:
+    get:
+      summary: 특정 건축물 제외/복원 전체 이력 조회
+      parameters:
+        - name: mgm_pmsrgst_pk
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: ExclusionListResponse
+
+  /api/reports:
+    get:
+      summary: 리포트 실행 이력 목록 조회
+      parameters:
+        - name: region_code
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: ReportListResponse
+
+  /api/reports/generate:
+    post:
+      summary: Excel / PDF 리포트 즉시 생성
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: ReportGenerateRequest
+      responses:
+        "201":
+          description: ReportRunItem
+
+  /api/reports/{report_id}/download:
+    get:
+      summary: 생성된 리포트 파일(Excel/PDF) 다운로드
+      parameters:
+        - name: report_id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: format
+          in: query
+          required: true
+          schema: { type: string, enum: [excel, pdf] }
+      responses:
+        "200":
+          description: File binary stream
+
+  /api/dashboard:
+    get:
+      summary: 대시보드 KPI 및 단계별/제외별 요약 조회
+      parameters:
+        - name: sigungu_cd
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: DashboardSummaryResponse
+
+  /api/dashboard/monthly:
+    get:
+      summary: 월 단위 신축 건물 추이 및 선택 월 건물 목록 조회
+      parameters:
+        - name: sigungu_cd
+          in: query
+          schema: { type: string }
+        - name: bjdong_cd
+          in: query
+          schema: { type: string }
+        - name: months
+          in: query
+          schema: { type: integer, default: 12 }
+        - name: month
+          in: query
+          schema: { type: string, description: "YYYY-MM" }
+        - name: basis
+          in: query
+          schema:
+            type: string
+            enum: [use_apr_day, arch_pms_day, real_stcns_day, all]
+            default: all
+        - name: include_excluded
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          description: MonthlySummaryResponse
+
+  /api/jobs/interest-regions:
+    get:
+      summary: 스케줄러 관심 지역 목록 조회
+      responses:
+        "200":
+          description: InterestRegionListResponse
+    post:
+      summary: 스케줄러 관심 지역 등록
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: InterestRegionCreate
+      responses:
+        "201":
+          description: InterestRegionItem
+
+  /api/jobs/interest-regions/{region_id}:
+    delete:
+      summary: 스케줄러 관심 지역 삭제
+      parameters:
+        - name: region_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /api/jobs/trigger:
+    post:
+      summary: 관심 지역 수집 및 리포트 작업 수동 트리거
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              description: JobTriggerRequest
+      responses:
+        "200":
+          description: JobTriggerResponse
+
+components:
+  schemas:
+    BuildingSummary:
+      type: object
+      properties:
+        mgm_pmsrgst_pk: { type: string }
+        bld_rgst_pk: { type: ["string", "null"] }
+        sigungu_cd: { type: string }
+        bjdong_cd: { type: string }
+        plat_plc: { type: ["string", "null"] }
+        bld_nm: { type: ["string", "null"] }
+        main_purps_cd_nm: { type: ["string", "null"] }
+        tot_area: { type: ["number", "null"] }
+        hhld_cnt: { type: ["integer", "null"] }
+        dong_cnt: { type: ["integer", "null"] }
+        arch_pms_day: { type: ["string", "null"] }
+        stcns_sched_day: { type: ["string", "null"] }
+        real_stcns_day: { type: ["string", "null"] }
+        use_apr_day: { type: ["string", "null"] }
+        expected_completion_month:
+          type: ["string", "null"]
+          description: "예상 준공월 (YYYY-MM)"
+        stage: { type: string }
+        priority_score: { type: number }
+        is_excluded: { type: boolean, default: false }
+        active_exclusion_status: { type: ["string", "null"] }
