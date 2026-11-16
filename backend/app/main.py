@@ -104,6 +104,11 @@ app = create_app()
 try:
     from a2wsgi import ASGIMiddleware
 
+    # Ensure DB tables & regions are initialized in WSGI mode (bypasses ASGI lifespan)
+    init_db()
+    with SessionLocal() as _db:
+        ensure_regions_seeded(_db)
+
     wsgi_app = ASGIMiddleware(app)
-except ImportError:
+except Exception:
     wsgi_app = None
