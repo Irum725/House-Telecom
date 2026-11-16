@@ -93,11 +93,7 @@ export async function fetchMonthlyDashboard(
   params: MonthlyQueryParams = {},
 ): Promise<MonthlySummaryResponse> {
   const qs = new URLSearchParams()
-  if (params.sigungu_cd) {
-    qs.set('sigungu_cd', params.sigungu_cd)
-  } else if (params.sido_cd) {
-    qs.set('sido_cd', params.sido_cd)
-  }
+  if (params.sigungu_cd) qs.set('sigungu_cd', params.sigungu_cd)
   if (params.bjdong_cd && params.bjdong_cd !== '00000') qs.set('bjdong_cd', params.bjdong_cd)
   if (params.months !== undefined) qs.set('months', String(params.months))
   if (params.month) qs.set('month', params.month)
