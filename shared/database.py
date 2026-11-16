@@ -2,11 +2,13 @@
 
 import os
 from collections.abc import Generator
+from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-DEFAULT_DATABASE_URL = "sqlite:///./house_telecom.db"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_DATABASE_URL = f"sqlite:///{ (PROJECT_ROOT / 'house_telecom.db').as_posix() }"
 
 
 def get_database_url() -> str:
