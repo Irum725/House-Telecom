@@ -99,16 +99,3 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-
-# WSGI compatibility for PythonAnywhere
-try:
-    from a2wsgi import ASGIMiddleware
-
-    # Ensure DB tables & regions are initialized in WSGI mode (bypasses ASGI lifespan)
-    init_db()
-    with SessionLocal() as _db:
-        ensure_regions_seeded(_db)
-
-    wsgi_app = ASGIMiddleware(app)
-except Exception:
-    wsgi_app = None
