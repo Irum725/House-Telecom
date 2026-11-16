@@ -4,10 +4,12 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.jobs.scheduler import start_scheduler, stop_scheduler
 from backend.region.service import ensure_regions_seeded
@@ -89,7 +91,19 @@ def create_app() -> FastAPI:
     application.include_router(dashboard.router)
     application.include_router(jobs.router)
 
+    dist_dir = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+    if dist_dir.exists():
+        application.mount("/", StaticFiles(directory=dist_dir, html=True), name="static")
+
     return application
 
 
 app = create_app()
+
+# WSGI compatibility for PythonAnywhere
+try:
+    from a2wsgi import ASGIMiddleware
+
+    wsgi_app = ASGIMiddleware(app)
+except ImportError:
+    wsgi_app = None
