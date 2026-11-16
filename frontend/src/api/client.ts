@@ -139,6 +139,18 @@ export async function syncBuildings(payload: BuildingSyncRequest): Promise<Build
   })
 }
 
+export async function resetBuildings(
+  sigunguCd?: string,
+): Promise<{ deleted_buildings: number; sigungu_cd: string | null }> {
+  const qs = new URLSearchParams()
+  if (sigunguCd) qs.set('sigungu_cd', sigunguCd)
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+  return requestJson<{ deleted_buildings: number; sigungu_cd: string | null }>(
+    `${API_BASE}/buildings/reset${suffix}`,
+    { method: 'DELETE' },
+  )
+}
+
 export async function createExclusion(
   payload: ExclusionCreateRequest,
 ): Promise<ExclusionHistoryItem> {

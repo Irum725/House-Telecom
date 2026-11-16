@@ -363,4 +363,21 @@ describe('신축 통신공사 사전파악 리포트 시스템 UI', () => {
       expect(calls.some((u) => u.includes('/api/buildings') && u.includes('scale=small'))).toBe(true)
     })
   })
+
+  it('resets collected buildings when clicking 데이터 초기화 after confirm', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<App />)
+
+    const resetBtn = await screen.findByRole('button', { name: /데이터 초기화/ })
+    await user.click(resetBtn)
+
+    await waitFor(() => {
+      const calls = fetchMock.mock.calls.map(([u, init]) => ({
+        url: String(u),
+        method: (init as RequestInit | undefined)?.method ?? 'GET',
+      }))
+      expect(calls.some((c) => c.url.includes('/api/buildings/reset') && c.method === 'DELETE')).toBe(true)
+    })
+  })
 })

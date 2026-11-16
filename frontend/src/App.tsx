@@ -12,6 +12,7 @@ import {
   fetchSigungu,
   generateReport,
   getReportDownloadUrl,
+  resetBuildings,
   restoreExclusion,
   syncBuildings,
   uploadExclusionCsv,
@@ -81,6 +82,7 @@ export function App() {
 
   // Actions & Feedback
   const [syncing, setSyncing] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [exportingFormat, setExportingFormat] = useState<'excel' | 'pdf' | null>(null)
   const [notice, setNotice] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(
     null,
@@ -306,6 +308,31 @@ export function App() {
     }
   }
 
+  const handleReset = async () => {
+    const confirmed = window.confirm(
+      '수집된 모든 건축물 및 제외 이력 데이터를 초기화하시겠습니까?\n(법정동 지역 코드는 유지됩니다.)',
+    )
+    if (!confirmed) return
+    setResetting(true)
+    setNotice(null)
+    try {
+      const res = await resetBuildings()
+      setNotice({
+        type: 'success',
+        text: `데이터 초기화 완료: ${res.deleted_buildings}건의 건축물 데이터가 삭제되었습니다.`,
+      })
+      setPage(1)
+      await Promise.all([loadDashboard(), loadBuildings(), loadExclusions()])
+    } catch (err) {
+      setNotice({
+        type: 'error',
+        text: err instanceof Error ? err.message : '데이터 초기화 중 오류가 발생했습니다.',
+      })
+    } finally {
+      setResetting(false)
+    }
+  }
+
   const handleDownloadReport = async (format: 'excel' | 'pdf') => {
     if (!selectedSigungu) return
     setExportingFormat(format)
@@ -480,12 +507,14 @@ export function App() {
               selectedEmd={selectedEmd}
               useFixture={useFixture}
               syncing={syncing}
+              resetting={resetting}
               exportingFormat={exportingFormat}
               onSidoChange={handleSidoChange}
               onSigunguChange={handleSigunguChange}
               onEmdChange={handleEmdChange}
               onUseFixtureChange={setUseFixture}
               onCollect={handleCollect}
+              onReset={handleReset}
               onDownloadReport={handleDownloadReport}
             />
 

@@ -5,7 +5,7 @@ import os
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import asc, desc, func, or_, select
+from sqlalchemy import asc, delete, desc, func, or_, select
 from sqlalchemy.orm import Session
 
 from backend.collector import (
@@ -22,7 +22,7 @@ from backend.exclusion import (
 from backend.stage import estimate_completion_month, evaluate_building
 from shared.database import get_db
 from shared.enums import BuildingStage
-from shared.models import Building
+from shared.models import Building, ExclusionHistory
 from shared.schemas import (
     BuildingDetail,
     BuildingSummary,
@@ -226,6 +226,28 @@ def sync_region_buildings(
     db.commit()
 
     return result
+
+
+@router.delete("/reset")
+def reset_buildings(
+    sigungu_cd: Optional[str] = Query(default=None, min_length=5, max_length=5),
+    db: Session = Depends(get_db),
+) -> dict[str, object]:
+    """Delete collected buildings and exclusion history (optionally scoped to sigungu_cd)."""
+    if sigungu_cd:
+        target_pks = list(
+            db.scalars(select(Building.mgm_pmsrgst_pk).where(Building.sigungu_cd == sigungu_cd)).all()
+        )
+        if target_pks:
+            db.execute(
+                delete(ExclusionHistory).where(ExclusionHistory.mgm_pmsrgst_pk.in_(target_pks))
+            )
+        res = db.execute(delete(Building).where(Building.sigungu_cd == sigungu_cd))
+    else:
+        db.execute(delete(ExclusionHistory))
+        res = db.execute(delete(Building))
+    db.commit()
+    return {"deleted_buildings": res.rowcount or 0, "sigungu_cd": sigungu_cd}
 
 
 @router.get("/{mgm_pmsrgst_pk}", response_model=BuildingDetail)

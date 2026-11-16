@@ -1,4 +1,4 @@
-import { Download, FileSpreadsheet, FileText, MapPin, RefreshCw } from 'lucide-react'
+import { Download, FileSpreadsheet, FileText, MapPin, RefreshCw, Trash2 } from 'lucide-react'
 import type { RegionItem } from '../types/api'
 
 interface RegionCollectorBarProps {
@@ -10,12 +10,14 @@ interface RegionCollectorBarProps {
   selectedEmd: string
   useFixture: boolean
   syncing: boolean
+  resetting?: boolean
   exportingFormat: 'excel' | 'pdf' | null
   onSidoChange: (sidoCd: string) => void
   onSigunguChange: (sigunguCd: string) => void
   onEmdChange: (bjdongCd: string) => void
   onUseFixtureChange: (val: boolean) => void
   onCollect: () => void
+  onReset?: () => void
   onDownloadReport: (format: 'excel' | 'pdf') => void
 }
 
@@ -28,12 +30,14 @@ export function RegionCollectorBar({
   selectedEmd,
   useFixture,
   syncing,
+  resetting = false,
   exportingFormat,
   onSidoChange,
   onSigunguChange,
   onEmdChange,
   onUseFixtureChange,
   onCollect,
+  onReset,
   onDownloadReport,
 }: RegionCollectorBarProps) {
   return (
@@ -123,6 +127,20 @@ export function RegionCollectorBar({
           <RefreshCw size={15} />
           {syncing ? '수집 중...' : '데이터 수집'}
         </button>
+
+        {onReset && (
+          <button
+            type="button"
+            className="btn"
+            disabled={syncing || resetting}
+            onClick={onReset}
+            title="수집된 건축물 및 제외 이력 데이터 초기화"
+            style={{ color: '#b91c1c', borderColor: '#fecaca' }}
+          >
+            <Trash2 size={15} />
+            {resetting ? '초기화 중...' : '데이터 초기화'}
+          </button>
+        )}
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button

@@ -273,3 +273,9 @@ def test_full_api_workflow(client: TestClient):
     del_res = client.delete(f"/api/jobs/interest-regions/{ir_id}")
     assert del_res.status_code == 204
     assert client.get("/api/jobs/interest-regions").json()["total"] == 0
+
+    # 9. Reset collected buildings & exclusion history
+    reset_res = client.delete("/api/buildings/reset")
+    assert reset_res.status_code == 200
+    assert reset_res.json()["deleted_buildings"] == 12
+    assert client.get("/api/buildings").json()["total"] == 0
