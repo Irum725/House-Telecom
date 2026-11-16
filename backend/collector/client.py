@@ -206,6 +206,49 @@ class ArchHubCollector:
             pages.append(payload)
         return pages
 
+    def _enrich_address(self, mapped: dict[str, Any], raw_item: dict[str, Any]) -> None:
+        """Ensure plat_plc includes full 시도/시군구/읍면동 prefix when API omits it."""
+        sgg = str(mapped.get("sigungu_cd") or "").strip()
+        bjd = str(mapped.get("bjdong_cd") or "").strip()
+        plat_plc = str(mapped.get("plat_plc") or "").strip()
+
+        if not plat_plc:
+            bun_raw = str(raw_item.get("bun") or "").strip()
+            ji_raw = str(raw_item.get("ji") or "").strip()
+            if bun_raw.isdigit() and int(bun_raw) > 0:
+                bun_num = int(bun_raw)
+                ji_num = int(ji_raw) if ji_raw.isdigit() else 0
+                plat_plc = f"{bun_num}-{ji_num}번지" if ji_num > 0 else f"{bun_num}번지"
+
+        region = None
+        if sgg and bjd:
+            region = (
+                self.db.query(Region)
+                .filter(Region.sigungu_cd == sgg, Region.bjdong_cd == bjd, Region.is_active.is_(True))
+                .first()
+            )
+        if region is None and sgg:
+            region = (
+                self.db.query(Region)
+                .filter(Region.sigungu_cd == sgg, Region.bjdong_cd == "00000", Region.is_active.is_(True))
+                .first()
+            )
+
+        if region is not None:
+            parts = [p for p in (region.sido_name, region.sigungu_name, region.emd_name) if p]
+            full_prefix = " ".join(parts)
+            if not plat_plc:
+                plat_plc = full_prefix
+            elif not plat_plc.startswith(region.sido_name):
+                if region.emd_name and plat_plc.startswith(region.emd_name):
+                    sgg_prefix = " ".join(p for p in (region.sido_name, region.sigungu_name) if p)
+                    plat_plc = f"{sgg_prefix} {plat_plc}".strip()
+                else:
+                    plat_plc = f"{full_prefix} {plat_plc}".strip()
+
+        if plat_plc:
+            mapped["plat_plc"] = plat_plc
+
     def _upsert_building(self, mapped: dict[str, Any]) -> tuple[bool, bool]:
         """Upsert a parsed building dict into `buildings`. Returns (created, updated)."""
         pk = mapped["mgm_pmsrgst_pk"]
@@ -319,6 +362,7 @@ class ArchHubCollector:
         updated_count = 0
         for raw_item in all_items:
             mapped = parse_ap_basis_item(raw_item)
+            self._enrich_address(mapped, raw_item)
             created, updated = self._upsert_building(mapped)
             if created:
                 created_count += 1

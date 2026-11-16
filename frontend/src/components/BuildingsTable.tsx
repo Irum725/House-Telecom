@@ -129,7 +129,9 @@ export function BuildingsTable({
                     </span>
                   </td>
                   <td>
-                    <div style={{ fontWeight: 700 }}>{b.bld_nm || '(건물명 미상)'}</div>
+                    <div style={{ fontWeight: 700 }}>
+                      {b.bld_nm || (b.plat_plc ? `${b.plat_plc} 신축` : '(건물명 미상)')}
+                    </div>
                     <div className="top20-meta">{b.plat_plc || '-'}</div>
                     <div className="top20-meta">
                       {b.main_purps_cd_nm || '-'} · PK: {b.mgm_pmsrgst_pk}
