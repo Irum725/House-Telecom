@@ -52,6 +52,10 @@ async def lifespan(_app: FastAPI):
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application instance."""
+    init_db()
+    with SessionLocal() as db:
+        ensure_regions_seeded(db)
+
     application = FastAPI(
         title="House-Telecom API",
         version="0.1.0",
@@ -100,5 +104,12 @@ def create_app() -> FastAPI:
 
 app = create_app()
 
-# WSGI compatibility for PythonAnywhere
-from backend.app.wsgi import application, wsgi_app
+
+def application(environ, start_response):
+    """Lazy WSGI bridge to avoid circular import."""
+    from backend.app.wsgi import application as _app
+
+    return _app(environ, start_response)
+
+
+wsgi_app = application
