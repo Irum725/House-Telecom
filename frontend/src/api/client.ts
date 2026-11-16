@@ -53,6 +53,10 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T
 }
 
+export async function fetchHealth(): Promise<{ status?: string; live_api_configured?: boolean }> {
+  return requestJson<{ status?: string; live_api_configured?: boolean }>(`${API_BASE}/config`)
+}
+
 export async function fetchSido(): Promise<RegionListResponse> {
   return requestJson<RegionListResponse>(`${API_BASE}/regions/sido`)
 }

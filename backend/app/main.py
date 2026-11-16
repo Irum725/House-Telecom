@@ -91,6 +91,12 @@ def create_app() -> FastAPI:
     def health_check() -> dict[str, str]:
         return {"status": "ok"}
 
+    @application.get("/api/config", tags=["health"])
+    def get_runtime_config() -> dict[str, bool]:
+        key = os.getenv("DATA_GO_KR_SERVICE_KEY", "").strip()
+        live_api_configured = bool(key) and key != "your_data_go_kr_service_key_here"
+        return {"live_api_configured": live_api_configured}
+
     application.include_router(regions.router)
     application.include_router(buildings.router)
     application.include_router(exclusions.router)

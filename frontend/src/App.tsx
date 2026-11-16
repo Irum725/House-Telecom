@@ -6,6 +6,7 @@ import {
   fetchEmd,
   fetchExclusionHistory,
   fetchExclusions,
+  fetchHealth,
   fetchMonthlyDashboard,
   fetchSido,
   fetchSigungu,
@@ -203,6 +204,13 @@ export function App() {
   ])
 
   useEffect(() => {
+    fetchHealth()
+      .then((res) => {
+        if (res.live_api_configured) {
+          setUseFixture(false)
+        }
+      })
+      .catch(() => {})
     fetchSido()
       .then((res) => setSidoList(res.items))
       .catch((err) =>

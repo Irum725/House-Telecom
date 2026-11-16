@@ -206,6 +206,36 @@ class ArchHubCollector:
                 setattr(existing, key, value)
         return False, True
 
+    def _resolve_target_bjdongs(self, sigungu_cd: str, bjdong_cd: str) -> list[str]:
+        """Resolve target bjdong_cd list; expands '00000' to known sub-dongs for live API."""
+        if bjdong_cd and bjdong_cd != "00000":
+            return [bjdong_cd]
+        rows = (
+            self.db.query(Region.bjdong_cd)
+            .filter(
+                Region.sigungu_cd == sigungu_cd,
+                Region.is_active.is_(True),
+                Region.bjdong_cd != "00000",
+            )
+            .distinct()
+            .order_by(Region.bjdong_cd.asc())
+            .all()
+        )
+        codes = [r[0] for r in rows if r[0]]
+        return codes if codes else ["00000"]
+
+    @staticmethod
+    def _is_recent_new_construction(raw_item: dict[str, Any], min_date: str = "20230101") -> bool:
+        """Filter live API items to recent (2023+) new construction permits."""
+        arch_gb = str(raw_item.get("archGbCdNm") or "").strip()
+        if arch_gb and "신축" not in arch_gb:
+            return False
+        for key in ("useAprDay", "realStcnsDay", "stcnsSchedDay", "archPmsDay"):
+            val = str(raw_item.get(key) or "").strip()
+            if len(val) == 8 and val.isdigit() and val >= min_date:
+                return True
+        return False
+
     def sync(
         self,
         request: BuildingSyncRequest,
@@ -224,26 +254,28 @@ class ArchHubCollector:
                 items, _ = normalize_items(payload)
                 all_items.extend(items)
         else:
-            page_no = 1
-            while True:
-                payload, calls = self._fetch_page_live(
-                    sigungu_cd=request.sigungu_cd,
-                    bjdong_cd=request.bjdong_cd,
-                    page_no=page_no,
-                    num_of_rows=request.num_of_rows,
-                    use_cache=use_cache,
-                    force_refresh=force_refresh,
-                )
-                api_calls_used += calls
-                items, total_count = normalize_items(payload)
-                all_items.extend(items)
+            target_bjdongs = self._resolve_target_bjdongs(request.sigungu_cd, request.bjdong_cd)
+            for target_bjdong in target_bjdongs:
+                page_no = 1
+                while True:
+                    payload, calls = self._fetch_page_live(
+                        sigungu_cd=request.sigungu_cd,
+                        bjdong_cd=target_bjdong,
+                        page_no=page_no,
+                        num_of_rows=request.num_of_rows,
+                        use_cache=use_cache,
+                        force_refresh=force_refresh,
+                    )
+                    api_calls_used += calls
+                    items, total_count = normalize_items(payload)
+                    all_items.extend(it for it in items if self._is_recent_new_construction(it))
 
-                total_pages = max(1, math.ceil(total_count / request.num_of_rows)) if total_count > 0 else 1
-                if page_no >= total_pages:
-                    break
-                if request.max_pages is not None and page_no >= request.max_pages:
-                    break
-                page_no += 1
+                    total_pages = max(1, math.ceil(total_count / request.num_of_rows)) if total_count > 0 else 1
+                    if page_no >= total_pages:
+                        break
+                    if request.max_pages is not None and page_no >= request.max_pages:
+                        break
+                    page_no += 1
 
         created_count = 0
         updated_count = 0
