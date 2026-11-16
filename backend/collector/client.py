@@ -22,6 +22,24 @@ GET_AP_BASIS_OP = "getApBasisOulnInfo"
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
+# 2026-07-01 인천광역시 행정체제 개편 구-신 시군구 코드 매핑
+# 건축HUB API는 개편 이후에도 구 코드(28110, 28140, 28260)로 인허가·준공 데이터를 유지하는 경우가 있어 함께 조회 후 신설 구로 정규화한다.
+INCHEON_LEGACY_MAP: dict[str, list[tuple[str, set[str], str, tuple[str, ...]]]] = {
+    # 영종구 (28160) <- 구 중구(28110) 영종·용유동
+    "28160": [
+        ("28110", {"14900", "15000", "15100", "15200", "15300", "15400", "15500", "15600"}, "인천광역시 영종구 ", ("인천광역시 중구 ",)),
+    ],
+    # 제물포구 (28150) <- 구 동구(28140) + 구 중구(28110) 내륙동
+    "28150": [
+        ("28140", {"10100", "10200", "10400", "10700"}, "인천광역시 제물포구 ", ("인천광역시 동구 ",)),
+        ("28110", {"13100", "13600", "14300", "14400"}, "인천광역시 제물포구 ", ("인천광역시 중구 ",)),
+    ],
+    # 검단구 (28280) <- 구 서구(28260) 검단권
+    "28280": [
+        ("28260", {"11500", "11600", "11700", "11800", "12000", "12100"}, "인천광역시 검단구 ", ("인천광역시 서구 ", "인천광역시 서해구 ")),
+    ],
+}
+
 
 class ArchHubCollector:
     """Collector for 국토교통부 건축HUB 건축인허가정보 서비스."""
@@ -254,11 +272,20 @@ class ArchHubCollector:
                 all_items.extend(items)
         else:
             target_bjdongs = self._resolve_target_bjdongs(request.sigungu_cd, request.bjdong_cd)
-            for target_bjdong in target_bjdongs:
+            query_pairs: list[tuple[str, str, Optional[str], tuple[str, ...]]] = [
+                (request.sigungu_cd, bjd, None, ()) for bjd in target_bjdongs
+            ]
+            # 2026-07-01 인천 개편 신설 구는 구 시군구 코드(28110/28140/28260) 이력도 함께 조회해 신설 구로 매핑
+            for legacy_sgg, valid_bjds, new_prefix, old_prefixes in INCHEON_LEGACY_MAP.get(request.sigungu_cd, []):
+                for bjd in target_bjdongs:
+                    if bjd in valid_bjds:
+                        query_pairs.append((legacy_sgg, bjd, new_prefix, old_prefixes))
+
+            for query_sgg, target_bjdong, new_prefix, old_prefixes in query_pairs:
                 page_no = 1
                 while True:
                     payload, calls = self._fetch_page_live(
-                        sigungu_cd=request.sigungu_cd,
+                        sigungu_cd=query_sgg,
                         bjdong_cd=target_bjdong,
                         page_no=page_no,
                         num_of_rows=request.num_of_rows,
@@ -267,7 +294,19 @@ class ArchHubCollector:
                     )
                     api_calls_used += calls
                     items, total_count = normalize_items(payload)
-                    all_items.extend(it for it in items if self._is_recent_new_construction(it))
+                    for it in items:
+                        if not self._is_recent_new_construction(it):
+                            continue
+                        if query_sgg != request.sigungu_cd:
+                            it = dict(it)
+                            it["sigunguCd"] = request.sigungu_cd
+                            if new_prefix and it.get("platPlc"):
+                                plc = str(it["platPlc"])
+                                for old_p in old_prefixes:
+                                    if plc.startswith(old_p):
+                                        it["platPlc"] = new_prefix + plc[len(old_p):]
+                                        break
+                        all_items.append(it)
 
                     total_pages = max(1, math.ceil(total_count / request.num_of_rows)) if total_count > 0 else 1
                     if page_no >= total_pages:
