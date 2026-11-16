@@ -77,12 +77,11 @@ class ArchHubCollector:
         params: dict[str, Any] = {
             "serviceKey": self.service_key,
             "sigunguCd": sigungu_cd,
+            "bjdongCd": bjdong_cd or "00000",
             "numOfRows": num_of_rows,
             "pageNo": page_no,
             "_type": "json",
         }
-        if bjdong_cd and bjdong_cd != "00000":
-            params["bjdongCd"] = bjdong_cd
 
         api_calls_used = 0
         last_error: Optional[Exception] = None

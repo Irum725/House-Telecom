@@ -46,6 +46,13 @@ def _to_int(value: Any, default: Optional[int] = 0) -> Optional[int]:
 
 def normalize_items(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], int]:
     """Extract (items, total_count) from a data.go.kr JSON response envelope."""
+    if "OpenAPI_ServiceResponse" in payload and "response" not in payload:
+        svc_err = payload.get("OpenAPI_ServiceResponse") or {}
+        cmm = svc_err.get("cmmMsgHeader") or {}
+        code = str(cmm.get("returnReasonCode") or "OPENAPI_ERROR")
+        msg = str(cmm.get("returnAuthMsg") or cmm.get("errMsg") or "OpenAPI service error")
+        raise ApiResponseError(code, msg)
+
     response = payload.get("response")
     if not isinstance(response, dict):
         raise CollectorError("Invalid API response: missing 'response' object.")
